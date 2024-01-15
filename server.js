@@ -2,15 +2,13 @@ const mqtt=require('mqtt');
 const mongoose=require('mongoose');
 const express=require('express');
 const http=require('http');
-const socketio=require('socket.io');
-const path=require('path');
+const fs=require('fs');
 
 const app=express();
-const server=http.createServer(app);
-const io=socketio(server);
 const mongourl = 'mongodb+srv://Gearz:Cga6vAfmAbACn8Ld@waterbnb.otllsi5.mongodb.net/WaterBnb?retryWrites=true&w=majority';
 
-
+const usersTopic = "uca/waterbnb";
+const poolTopic = "uca/iot/piscine";
 // Connecter database name: waterbnb
 mongoose.connect(mongourl, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
@@ -29,93 +27,88 @@ const userSchema = new mongoose.Schema({
    nom: String, 
    idu: String, //voir si cest pas un int 
 });
-  
-const UserModel = mongoose.model('users', userSchema); //  User est le nom de la collection
 
-/*
-baptista;22301479
-benna;22311378
-bouchenguour;22306568
-boulli;22311680
-boussik;22002183
-bruneau;22309088
-colombani;22315240
-daghar;22012941
-diplacido;22005506
-escobar;22003671
-escoubeyrou;22306785
-essafi;22004595
-essamedwaraziz;22309059
-foloka;21906562
-girard;22004293
-haddou;22312300
-jeannin;22002387
-municchi;21907979
-parkash;22309663
-savasta;21903402
-vasseur;22012379
-*/
+const poolSchema = new mongoose.Schema({
+    idswp: String,
+    temp: Number,
+    lat: Number,
+    lon: Number,
+    isOccuped: Boolean
+});
+  
+const UserModel = mongoose.model('users', userSchema);
+const PoolModel = mongoose.model('pools', poolSchema);
 
-const usersToAdd = [
-    { nom: 'baptista', idu: '22301479' },
-    { nom: 'benna', idu: '22311378' },
-    { nom: 'bouchenguour', idu: '22306568' },
-    { nom: 'boulli', idu: '22311680' },
-    { nom: 'boussik', idu: '22002183' },
-    { nom: 'bruneau', idu: '22309088' },
-    { nom: 'colombani', idu: '22315240' },
-    { nom: 'daghar', idu: '22012941' },
-    { nom: 'diplacido', idu: '22005506' },
-    { nom: 'escobar', idu: '22003671' },
-    { nom: 'escoubeyrou', idu: '22306785' },
-    { nom: 'essafi', idu: '22004595' },
-    { nom: 'essamedwaraziz', idu: '22309059' },
-    { nom: 'foloka', idu: '21906562' },
-    { nom: 'girard', idu: '22004293' },
-    { nom: 'haddou', idu: '22312300' },
-    { nom: 'jeannin', idu: '22002387' },
-    { nom: 'municchi', idu: '21907979' },
-    { nom: 'parkash', idu: '22309663' },
-    { nom: 'savasta', idu: '21903402' },
-    { nom: 'vasseur', idu: '22012379' },
-  ];
-  
-//   UserModel.insertMany(usersToAdd)
-//     .then(() => {
-//       console.log('Utilisateurs ajoutés avec succès');
-//     })
-//     .catch((err) => {
-//       console.error('Erreur lors de l\'ajout des utilisateurs :', err);
-//     });
-  
-
-// Utilisation de Promise.all pour attendre que toutes les opérations soient terminées
-Promise.all(
-    usersToAdd.map(async (user) => {
-      try {
-        // Vérifier si l'utilisateur existe déjà
-        const existingUser = await UserModel.findOne({ nom: user.nom }).exec();
-  
-        if (!existingUser) {
-          // L'utilisateur n'existe pas, ajoutez-le à la base de données
-          const newUser = new UserModel(user);
-          await newUser.save();
-          //console.log(`Utilisateur ${user.nom} ajouté avec succès`);
-        } else {
-          //console.log(`Utilisateur ${user.nom} existe déjà. Ignoré.`);
+//check if user exist in the database
+async function checkIfUserExist(idu){
+    try {
+        let user = await UserModel.findOne({idu: idu}).exec();
+        if (user) {
+            return true;
         }
-      } catch (error) {
-        console.error(`Erreur lors de l'ajout de l'utilisateur ${user.nom} :`, error);
-      }
-    })
-  )
-    .then(() => {
+        else {
+            return false;
+        }
+    }
+    catch (e) {
+        console.error(e);
+        return false;
+    }
+}
+
+//check if pool exist in the database
+async function checkIfPoolExist(idswp){
+    try {
+        let pool = await PoolModel.findOne({idswp: idswp}).exec();
+        if (pool) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    catch (e) {
+        console.error(e);
+        return false;
+    }
+}
+
+// read file and put every line in an array
+var users = fs.readFileSync('usersM1_2023.csv', 'utf8').split('\n');
+for (var i = 0; i < users.length; i++) {
+    if (users[i].length > 0) {
+        users[i] = users[i].split(';');
+    }
+    else {
+        users.splice(i, 1);
+    }
+}
+
+async function addUsersToDatabase(users) {
+    try {
+      // Utilisation de Promise.all pour attendre que toutes les opérations soient terminées
+      await Promise.all(users.map(async (user) => {
+        // Vérification si l'utilisateur existe déjà
+        const userExist = await UserModel.exists({ idu: user[1] });
+        if (userExist) {
+          //console.log(`Utilisateur ${user[0]} existe déjà`);
+        }
+        else {
+            const newUser = new UserModel({
+                nom: user[0],
+                idu: user[1],
+            });
+            await newUser.save();
+            //console.log(`Utilisateur ${user[0]} ajouté avec succès`);
+        }
+      }));
       console.log('Opérations d\'ajout terminées avec succès');
-    })
-    .catch((err) => {
-      console.error('Erreur lors des opérations d\'ajout :', err);
-    });
+    } catch (error) {
+      console.error('Erreur lors des opérations d\'ajout :', error);
+    }
+  }
   
+  addUsersToDatabase(users);
 
 //connect mqtt with password
 const client=mqtt.connect('mqtt://84.235.237.236',{
@@ -124,8 +117,8 @@ const client=mqtt.connect('mqtt://84.235.237.236',{
 });
 
 client.on('connect', function () {
-    console.log('Connected to MQTT broker');
-    client.subscribe('uca/waterbnb', function (err) {
+    console.log('Connected to MQTT users broker');
+    client.subscribe(usersTopic, function (err) {
         if (err) {
             console.error('Failed to subscribe to MQTT topic');
         }
@@ -134,21 +127,54 @@ client.on('connect', function () {
 
 client.on('connect', function () {
     console.log('Connected to MQTT pool broker');
-    client.subscribe('uca/iot/piscine', function (err) {
+    client.subscribe(poolTopic, function (err) {
         if (err) {
             console.error('Failed to subscribe to MQTT topic');
         }
     });
 });
 
-client.on('message', function (topic, message) {
+client.on('message', async function (topic, message) {
     console.log('Received message:', topic, message.toString());
     try {
+        if (topic === poolTopic) {
+            let data = JSON.parse(message.toString());
+            let isexist = checkIfPoolExist(data.idswp);
+            //update pool
+            if (isexist) {
+                await PoolModel.updateOne({idswp: data["info"]["ident"]}, {temp: data["status"]["temperature"], lat: data["location"]["gps"]["lat"], lon: data["location"]["gps"]["lon"], isOccuped: data["piscine"]["occuped"]}, function(err, res) {
+                    if (err) {
+                        console.error(err);
+                    }
+                    else {
+                        console.log('Pool updated');
+                    }
+                });
+            }
+            else {
+                //add pool
+                const newPool = new PoolModel({
+                    idswp: data["info"]["ident"],
+                    temp: data["status"]["temperature"],
+                    lat: data["location"]["gps"]["lat"],
+                    lon: data["location"]["gps"]["lon"],
+                    isOccuped: data["piscine"]["occuped"]
+                });
+                await newPool.save(function(err, res) {
+                    if (err) {
+                        console.error(err);
+                    }
+                    else {
+                        console.log('Pool added');
+                    }
+                });
+            }
+        }
         let data = JSON.parse(message.toString());
         console.log(data);
     }
     catch (e) {
-        console.error('Invalid JSON received');
+        console.error(e);
     }
 });
 
@@ -162,23 +188,39 @@ app.get('/open', async (req, res) => {
         //check mongoose if the idu is in the database
         let idu = req.query.idu;
         let idswp = req.query.idswp;
-        try {
-            let user = await UserModel.findOne({idu: idu}).exec();
-            if (user) {
-                //send mqtt message to open the door
-                client.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp}));
-                res.send({idu: idu, idswp: idswp, authorized: true});
-            }
-            else {
-                res.send('User not found');
-            }
+        let userExist = await checkIfUserExist(idu);
+        if (userExist) {
+            client.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp}));
+            res.send({idu: idu, idswp: idswp, granted: "YES"});
+            //mqtt publish
+            mqtt.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp, granted: "YES"}));
         }
-        catch (e) {
-            console.error(e);
-            res.send('Error');
+        else {
+            res.send('User does not exist');
+            res.send({idu: idu, idswp: idswp, granted: "NO"});
+            //mqtt publish
+            mqtt.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp, granted: "NO"}));
         }
     }
     else {
         res.send('Argument missing');
     }
 });
+
+app.get('/users', async (req, res) => {
+    try {
+        let users = await UserModel.find().exec();
+        res.send(users);
+    }
+    catch (e) {
+        console.error(e);
+        res.send('Error');
+    }
+})
+
+app.get('/publish', async (req, res) => {
+    //envoyer le message mqtt
+    request_data = JSON.stringify(req.query);
+    client.publish(request_data['topic'], request_data['msg']);
+});
+
