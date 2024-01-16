@@ -103,7 +103,6 @@ void mqtt_pubcallback(char* topic, byte* payload, unsigned int length) {
     if (String(topic) == TOPIC_TEMPERATURE) {
         latestTemperatureFromBroker = message.toFloat();
     }
-    USE_SERIAL.println(message);
     //{'idu' : 22002183, 'idswp' : P_22002183, "granted" : "NO"}
     // si topic est celui de waterbnb check si granted vaut yes ou no
     // check si idswp est le meme que notre idswp
@@ -123,14 +122,7 @@ void mqtt_pubcallback(char* topic, byte* payload, unsigned int length) {
         USE_SERIAL.println(granted);
         // Compare la température de la piscine reçue avec la notre
         if (idswp == model.owner) {
-            if (granted == "YES") {
-                model.occuped = true;
-                // LED jaune : piscine occupée
-                for(int i=0; i<NUMLEDS; i++) {
-                    strip.setPixelColor(i, strip.Color(255,255, 0));
-                }
-            } else {
-                model.occuped = false;
+            if (granted == "NO") {
                 // LED rouge : piscine occupée
                 for(int i=0; i<NUMLEDS; i++) {
                     strip.setPixelColor(i, strip.Color(255,0, 0));
@@ -258,7 +250,7 @@ void mqtt_subscribe_mytopics() {
 
 void loop() {
     int currentTimestamp = millis();
-    int delai = 5000;
+    int delai = 7000;
     // Récupérer la température des autres piscines via MQTT et mettre à jour model.hotspot
     mqttclient.loop();
     mqtt_subscribe_mytopics();

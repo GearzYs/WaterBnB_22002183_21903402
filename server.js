@@ -9,7 +9,7 @@ const server=http.createServer(app);
 //set the port
 const port=3000;
 server.listen(port, () => {
-    console.log(`Server listening at http://localhost:${port}`);
+    console.log(`Server listening at port ${port}`);
 });
 const mongourl = 'mongodb+srv://Gearz:Cga6vAfmAbACn8Ld@waterbnb.otllsi5.mongodb.net/WaterBnb?retryWrites=true&w=majority';
 
@@ -51,7 +51,6 @@ const PoolModel = mongoose.model('pools', poolSchema);
 async function checkIfUserExist(idu){
     try {
         let user = await UserModel.findOne({idu: idu}).exec();
-        console.log(user);
         if (user) {
             return true;
         }
@@ -147,7 +146,7 @@ client.on('connect', function () {
 
 const updatePool = async (data) => {
     try {
-        let pool = await checkIfPoolExist(data.idswp);
+        let pool = await checkIfPoolExist(data.info.ident);
         if (pool) {
             pool.temp = data.status.temperature
             pool.lat = data.location.gps.lat;
@@ -194,21 +193,33 @@ app.get('/open', async (req, res) => {
         let idswp = req.query.idswp;
         let userExist = await checkIfUserExist(idu);
         if (userExist) {
-            client.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp}));
-            res.send({idu: idu, idswp: idswp, granted: "YES"});
-            //mqtt publish
-            client.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp, granted: "YES"}));
-            if (await checkIfPoolExist(idswp)) {
-                let pool = await PoolModel.findOne({idswp: idswp}).exec();
-                pool.idu = idu;
-                pool.numberOfRent += 1;
-                await pool.save();
+            let pool = await checkIfPoolExist(idswp);
+            if (!pool.isOccuped) {
+                res.send({idu: idu, idswp: idswp, granted: "YES"});
+                //mqtt publish
+                client.publish('uca/waterbnb', `{'idu': '${idu}', 'idswp': '${idswp}, 'granted': 'YES'}`);                console.log('Sending message to MQTT broker')
+                console.log({idu: idu, idswp: idswp, granted: "YES"})
+                if (await checkIfPoolExist(idswp)) {
+                    let pool = await PoolModel.findOne({idswp: idswp}).exec();
+                    pool.idu = idu;
+                    pool.numberOfRent += 1;
+                    await pool.save();
+                }
+            }
+            else {
+                res.send({idu: idu, idswp: idswp, granted: "NO"});
+                //mqtt publish
+                client.publish('uca/waterbnb', `{'idu': '${idu}', 'idswp': '${idswp}, 'granted': 'NO'}`);
+                console.log('Sending message to MQTT broker')
+                console.log({idu: idu, idswp: idswp, granted: "NO"})
             }
         }
         else {
             res.send({idu: idu, idswp: idswp, granted: "NO"});
             //mqtt publish
-            client.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp, granted: "NO"}));
+            client.publish('uca/waterbnb', `{'idu': '${idu}', 'idswp': '${idswp}, 'granted': 'NO'}`);
+            console.log('Sending message to MQTT broker')
+            console.log({idu: idu, idswp: idswp, granted: "NO"})
         }
     }
     else {
