@@ -197,8 +197,8 @@ app.get('/open', async (req, res) => {
             if (!pool.isOccuped) {
                 res.send({idu: idu, idswp: idswp, granted: "YES"});
                 //mqtt publish
-                client.publish('uca/waterbnb', `{'idu': '${idu}', 'idswp': '${idswp}, 'granted': 'YES'}`);                console.log('Sending message to MQTT broker')
-                console.log({idu: idu, idswp: idswp, granted: "YES"})
+                client.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp, granted: "YES"}));                console.log('Sending message to MQTT broker')
+                console.log(JSON.stringify({idu: idu, idswp: idswp, granted: "YES"}))
                 if (await checkIfPoolExist(idswp)) {
                     let pool = await PoolModel.findOne({idswp: idswp}).exec();
                     pool.idu = idu;
@@ -209,17 +209,17 @@ app.get('/open', async (req, res) => {
             else {
                 res.send({idu: idu, idswp: idswp, granted: "NO"});
                 //mqtt publish
-                client.publish('uca/waterbnb', `{'idu': '${idu}', 'idswp': '${idswp}, 'granted': 'NO'}`);
+                client.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp, granted: "NO"}));
                 console.log('Sending message to MQTT broker')
-                console.log({idu: idu, idswp: idswp, granted: "NO"})
+                console.log(JSON.stringify({idu: idu, idswp: idswp, granted: "NO"}))
             }
         }
         else {
             res.send({idu: idu, idswp: idswp, granted: "NO"});
             //mqtt publish
-            client.publish('uca/waterbnb', `{'idu': '${idu}', 'idswp': '${idswp}, 'granted': 'NO'}`);
+            client.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp, granted: "NO"}));
             console.log('Sending message to MQTT broker')
-            console.log({idu: idu, idswp: idswp, granted: "NO"})
+            console.log(JSON.stringify({idu: idu, idswp: idswp, granted: "NO"}))
         }
     }
     else {
