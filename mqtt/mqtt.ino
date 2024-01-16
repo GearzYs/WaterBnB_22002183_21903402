@@ -48,8 +48,8 @@ double haversine(double lat1, double lon1, double lat2, double lon2) {
 
 typedef struct {
     float temperature;
-    float lat = 48.862725;
-    float lon = 2.287592;
+    float lat = 43.62029494507019;
+    float lon = 7.071035864431865;
     int luminosity;
     bool hotspot = false;
     bool occuped = false;

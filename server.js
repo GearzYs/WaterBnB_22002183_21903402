@@ -5,6 +5,12 @@ const http=require('http');
 const fs=require('fs');
 
 const app=express();
+const server=http.createServer(app);
+//set the port
+const port=3000;
+server.listen(port, () => {
+    console.log(`Server listening at http://localhost:${port}`);
+});
 const mongourl = 'mongodb+srv://Gearz:Cga6vAfmAbACn8Ld@waterbnb.otllsi5.mongodb.net/WaterBnb?retryWrites=true&w=majority';
 
 const usersTopic = "uca/waterbnb";
