@@ -1,0 +1,53 @@
+[
+    {
+        "id": "a0ca4ba74a3e505e",
+        "type": "mqtt in",
+        "z": "fec0a2f2914febf2",
+        "g": "833d9e03675df881",
+        "name": "",
+        "topic": "uca/waterbnb",
+        "qos": "2",
+        "datatype": "utf8",
+        "broker": "2440edb5d689cbd1",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 190,
+        "y": 820,
+        "wires": [
+            [
+                "5f2005608c61c58f"
+            ]
+        ]
+    },
+    {
+        "id": "2440edb5d689cbd1",
+        "type": "mqtt-broker",
+        "name": "Mosquitto broker",
+        "broker": "test.mosquitto.org",
+        "port": "1883",
+        "tls": "",
+        "clientid": "GMM",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

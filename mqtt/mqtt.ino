@@ -4,7 +4,6 @@
 #include "wifi_utils.h"
 #include "OneWire.h"
 #include "DallasTemperature.h"
-#include <Adafruit_NeoPixel.h>
 #include <PubSubClient.h>
 #include "esp_sleep.h"
 #include <Adafruit_NeoPixel.h>
@@ -19,7 +18,7 @@
 #define TOPIC "uca/iot/piscine"
 #define TOPIC_WATERBNB "uca/waterbnb"
 #define TOPIC_LED "uca/iot/led"
-#define TOPIC_TEMPERATURE "uca/iot/temperature"  // j'ai ajoute ca car tu le mettais en dur dans le code
+#define TOPIC_TEMPERATURE "uca/iot/temperature"
 #define SEUIL_PRESENCE 200
 #define TIME_TO_SLEEP 10 // en secondes
 #define TIME_TO_UP 2 // en secondes
