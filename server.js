@@ -30,10 +30,12 @@ const userSchema = new mongoose.Schema({
 
 const poolSchema = new mongoose.Schema({
     idswp: String,
+    idu: String,
     temp: Number,
     lat: Number,
     lon: Number,
-    isOccuped: Boolean
+    isOccuped: Boolean,
+    numberOfRent: Number
 });
   
 const UserModel = mongoose.model('users', userSchema);
@@ -43,6 +45,7 @@ const PoolModel = mongoose.model('pools', poolSchema);
 async function checkIfUserExist(idu){
     try {
         let user = await UserModel.findOne({idu: idu}).exec();
+        console.log(user);
         if (user) {
             return true;
         }
@@ -61,7 +64,7 @@ async function checkIfPoolExist(idswp){
     try {
         let pool = await PoolModel.findOne({idswp: idswp}).exec();
         if (pool) {
-            return true;
+            return pool;
         }
         else {
             return false;
@@ -110,11 +113,13 @@ async function addUsersToDatabase(users) {
   
   addUsersToDatabase(users);
 
-//connect mqtt with password
-const client=mqtt.connect('mqtt://84.235.237.236',{
+
+const client=mqtt.connect('mqtt://test.mosquitto.org');
+
+/*const client=mqtt.connect('mqtt://84.235.237.236',{
     username:'espofuca',
     password:'vn3syxrrGQk91YKL44JOZGno'
-});
+});*/
 
 client.on('connect', function () {
     console.log('Connected to MQTT users broker');
@@ -134,52 +139,45 @@ client.on('connect', function () {
     });
 });
 
-client.on('message', async function (topic, message) {
-    console.log('Received message:', topic, message.toString());
+const updatePool = async (data) => {
     try {
-        if (topic === poolTopic) {
-            let data = JSON.parse(message.toString());
-            let isexist = checkIfPoolExist(data.idswp);
-            //update pool
-            if (isexist) {
-                await PoolModel.updateOne({idswp: data["info"]["ident"]}, {temp: data["status"]["temperature"], lat: data["location"]["gps"]["lat"], lon: data["location"]["gps"]["lon"], isOccuped: data["piscine"]["occuped"]}, function(err, res) {
-                    if (err) {
-                        console.error(err);
-                    }
-                    else {
-                        console.log('Pool updated');
-                    }
-                });
-            }
-            else {
-                //add pool
-                const newPool = new PoolModel({
-                    idswp: data["info"]["ident"],
-                    temp: data["status"]["temperature"],
-                    lat: data["location"]["gps"]["lat"],
-                    lon: data["location"]["gps"]["lon"],
-                    isOccuped: data["piscine"]["occuped"]
-                });
-                await newPool.save(function(err, res) {
-                    if (err) {
-                        console.error(err);
-                    }
-                    else {
-                        console.log('Pool added');
-                    }
-                });
-            }
+        let pool = await checkIfPoolExist(data.idswp);
+        if (pool) {
+            pool.temp = data.status.temperature
+            pool.lat = data.location.gps.lat;
+            pool.lon = data.location.gps.lon;
+            pool.isOccuped = data.piscine.occuped;
+            await pool.save();
         }
-        let data = JSON.parse(message.toString());
-        console.log(data);
+        else {
+            const newPool = new PoolModel({
+                idswp: data.info.ident,
+                idu: null,
+                temp: data.status.temperature,
+                lat: data.location.gps.lat,
+                lon: data.location.gps.lon,
+                isOccuped: data.piscine.occuped,
+                numberOfRent: 0
+            });
+            await newPool.save();
+        }
     }
     catch (e) {
         console.error(e);
     }
-});
+}
 
-app.listen(3000, () => {
-    console.log('listening on *:3000');
+client.on('message', function (topic, message) {
+    //console.log('Received message:', topic, message.toString());
+    try {
+        if (topic === poolTopic) {
+            let data = JSON.parse(message.toString());
+            updatePool(data);
+        }
+    }
+    catch (e) {
+        console.error(e);
+    }
 });
 
 //récupère les requêtes HTTP GET avec la route "/open" avec le paramètre "idu" et "idswp"
@@ -193,34 +191,21 @@ app.get('/open', async (req, res) => {
             client.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp}));
             res.send({idu: idu, idswp: idswp, granted: "YES"});
             //mqtt publish
-            mqtt.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp, granted: "YES"}));
+            client.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp, granted: "YES"}));
+            if (await checkIfPoolExist(idswp)) {
+                let pool = await PoolModel.findOne({idswp: idswp}).exec();
+                pool.idu = idu;
+                pool.numberOfRent += 1;
+                await pool.save();
+            }
         }
         else {
-            res.send('User does not exist');
             res.send({idu: idu, idswp: idswp, granted: "NO"});
             //mqtt publish
-            mqtt.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp, granted: "NO"}));
+            client.publish('uca/waterbnb', JSON.stringify({idu: idu, idswp: idswp, granted: "NO"}));
         }
     }
     else {
         res.send('Argument missing');
     }
 });
-
-app.get('/users', async (req, res) => {
-    try {
-        let users = await UserModel.find().exec();
-        res.send(users);
-    }
-    catch (e) {
-        console.error(e);
-        res.send('Error');
-    }
-})
-
-app.get('/publish', async (req, res) => {
-    //envoyer le message mqtt
-    request_data = JSON.stringify(req.query);
-    client.publish(request_data['topic'], request_data['msg']);
-});
-

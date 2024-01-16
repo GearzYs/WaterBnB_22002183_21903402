@@ -48,8 +48,8 @@ double haversine(double lat1, double lon1, double lat2, double lon2) {
 
 typedef struct {
     float temperature;
-    float lat = 43.62453842;
-    float lon = 7.050628185;
+    float lat = 48.862725;
+    float lon = 2.287592;
     int luminosity;
     bool hotspot = false;
     bool occuped = false;
@@ -57,9 +57,10 @@ typedef struct {
 } esp_model;
 
 /*====== MQTT configuration ==================*/
-const char* mqtt_server = "84.235.237.236";
-const char* mqtt_user = "espofuca";
-const char* mqtt_password = "vn3syxrrGQk91YKL44JOZGno";
+const char* mqtt_server = "test.mosquitto.org";
+//const char* mqtt_server = "84.235.237.236";
+//const char* mqtt_user = "espofuca";
+//const char* mqtt_password = "vn3syxrrGQk91YKL44JOZGno";
 WiFiClient espClient;
 PubSubClient mqttclient(espClient);
 String hostname = "Piscine Jean Bouin";
@@ -197,7 +198,7 @@ StaticJsonDocument<1000> model_to_piscine(esp_model *model){
     
     jdoc["info"]["ident"] = model->owner;
     jdoc["info"]["loc"] = "A Nice";
-    jdoc["info"]["user"] = "Piscine";
+    jdoc["info"]["user"] = "Khalil BOUSSIK";
 
     jdoc["net"]["uptime"] = 0;
     jdoc["net"]["ssid"] = WiFi.SSID();
@@ -238,7 +239,8 @@ void mqtt_subscribe_mytopics() {
         // Attempt to connect
         String mqttclienId = "ESP32Client-";
         mqttclienId += WiFi.macAddress();
-        if (mqttclient.connect(mqttclienId.c_str(), mqtt_user, mqtt_password)) {
+        if (mqttclient.connect(mqttclienId.c_str())){
+        //if (mqttclient.connect(mqttclienId.c_str(), mqtt_user, mqtt_password)) {
             USE_SERIAL.println("connected");
             // Subscribe
             mqttclient.subscribe(TOPIC_WATERBNB);
