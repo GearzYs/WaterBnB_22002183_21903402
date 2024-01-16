@@ -31,16 +31,14 @@ MongoDB database link used :
 3. Install [Arduino](https://www.arduino.cc/en/software).
 4. Install these packages : `Adafruit_NeoPixel`, `PubSubClient`, `DallasTemperature`, `OneWire`, `ArduinoJson`
 5. Install `ESP32 Dev Module` Board
-6. Open new terminal to this repository
-7. Run `npm install .`
-8. Run node .
-9. Open new terminal
-10. Run `node-red`
-11. Go to http://localhost:1880/
-12. Import `nodered.json`
-13. Install these palettes on node-red : `node-red-contrib-web-worldmap`, `node-red-dashboard`, `node-red-contrib-ui-led`
-14. Deploy and go to `http://localhost:1880/ui/`
-15. Enjoy renting pools by clicking on your ESP on the map to book it.
+6. If you want to run the server locally, open new terminal to this repository, run `npm install .` and `node .`, it'll run on `http://localhost:3000/`
+7. Open new terminal
+8. Run `node-red`
+9. Go to http://localhost:1880/
+10. Import `nodered.json`
+11. Install these palettes on node-red : `node-red-contrib-web-worldmap`, `node-red-dashboard`, `node-red-contrib-ui-led`
+12. Deploy and go to `http://localhost:1880/ui/`
+13. Enjoy renting pools by clicking on your ESP on the map to book it.
 
 ## **MongoDB Dashboard of swimming pools**
 
